@@ -1,0 +1,2190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity // Generative Soundscape</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tone.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        :root {
+            --bg-color: #06080f;
+            --panel-bg: rgba(10, 14, 26, 0.75);
+            --panel-border: rgba(0, 242, 254, 0.15);
+            --panel-border-hover: rgba(0, 242, 254, 0.4);
+            --text-primary: #e2e8f0;
+            --text-muted: #64748b;
+            --accent-cyan: #00f2fe;
+            --accent-magenta: #ff007f;
+            --accent-violet: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            --font-sans: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* WebGL Background Canvas */
+        #webgl-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            display: block;
+        }
+
+        /* Splash Screen / User Gesture Overlay */
+        #splash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #101426 0%, #06080f 100%);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        #splash-overlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .splash-content {
+            max-width: 540px;
+            width: 90%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            padding: 40px;
+            background: rgba(10, 14, 26, 0.65);
+            border: 1px solid rgba(0, 242, 254, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .splash-logo {
+            font-family: var(--font-mono);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 6px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+            animation: glow-pulse 3s infinite ease-in-out;
+        }
+
+        .splash-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-family: var(--font-mono);
+        }
+
+        .splash-description {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        .splash-instructions {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 14px;
+            width: 100%;
+            text-align: left;
+            font-size: 12px;
+            color: #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .splash-instructions li {
+            list-style-position: inside;
+            list-style-type: square;
+            color: var(--text-primary);
+        }
+        .splash-instructions li span {
+            color: var(--accent-cyan);
+        }
+
+        .splash-btn {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+            color: #020617;
+            border: none;
+            padding: 14px 32px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.3);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .splash-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(0, 242, 254, 0.6);
+        }
+
+        .splash-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Main UI Layout Container */
+        #app-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            pointer-events: none;
+            transition: opacity 0.8s ease;
+            opacity: 0;
+        }
+
+        #app-container.fade-in {
+            opacity: 1;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* UI elements must re-enable pointer events */
+        header, aside, footer, button, select, input {
+            pointer-events: auto;
+        }
+
+        /* Header Bar */
+        header {
+            height: 60px;
+            background: rgba(8, 10, 18, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            box-sizing: border-box;
+        }
+
+        .header-title-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .header-title {
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+
+        .header-subtitle {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .header-stats {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-primary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .status-dot.active {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        .status-dot.paused {
+            background-color: var(--accent-yellow);
+            box-shadow: 0 0 10px var(--accent-yellow);
+        }
+
+        .header-stat-item {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .header-stat-item span {
+            color: var(--accent-cyan);
+        }
+
+        /* Sidebar Panels Layout */
+        .panels-container {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+            gap: 20px;
+        }
+
+        .panel {
+            width: 310px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            z-index: 20;
+        }
+
+        .panel:hover {
+            border-color: var(--panel-border-hover);
+            box-shadow: 0 10px 35px rgba(0, 242, 254, 0.08);
+        }
+
+        .panel-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .panel-content {
+            flex: 1;
+            padding: 18px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Panel Collapsed States */
+        .panel.collapsed-left {
+            transform: translateX(-330px);
+            opacity: 0;
+        }
+
+        .panel.collapsed-right {
+            transform: translateX(330px);
+            opacity: 0;
+        }
+
+        /* Toggle Button styling */
+        .toggle-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(10, 14, 26, 0.9);
+            border: 1px solid var(--panel-border);
+            color: var(--accent-cyan);
+            width: 20px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            transition: all 0.2s ease;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+
+        .toggle-btn:hover {
+            background: var(--accent-cyan);
+            color: #06080f;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        .left-toggle {
+            right: -20px;
+            border-left: none;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .right-toggle {
+            left: -20px;
+            border-right: none;
+            border-radius: 6px 0 0 6px;
+        }
+
+        /* Right Panel Details */
+        .right-panel {
+            width: 350px;
+        }
+
+        /* Form Controls */
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .label-val-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-val {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        select {
+            background: rgba(5, 7, 13, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 9px 12px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        select:hover, select:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 242, 254, 0.1);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 6px 0;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 3px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -5px;
+            box-shadow: 0 0 8px var(--accent-cyan);
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.25);
+            background-color: #fff;
+        }
+
+        /* Toggle Switches */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-row span {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.06);
+            transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-muted);
+            transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 50%;
+        }
+
+        input:checked + .slider-toggle {
+            background-color: rgba(0, 242, 254, 0.1);
+            border-color: var(--accent-cyan);
+        }
+
+        input:checked + .slider-toggle:before {
+            transform: translateX(20px);
+            background-color: var(--accent-cyan);
+            box-shadow: 0 0 6px var(--accent-cyan);
+        }
+
+        /* Action Buttons */
+        .play-pause-btn {
+            background: rgba(0, 242, 254, 0.05);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.05);
+        }
+
+        .play-pause-btn:hover {
+            background: var(--accent-cyan);
+            color: #06080f;
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        .play-pause-btn.active {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: var(--accent-cyan);
+        }
+
+        .action-btn-secondary {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .action-btn-secondary:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Presets Layout */
+        .presets-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .presets-title {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #94a3b8;
+            padding: 8px 4px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-violet);
+            background: rgba(139, 92, 246, 0.08);
+            color: var(--accent-violet);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-violet);
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--accent-violet);
+            box-shadow: 0 0 8px rgba(139, 92, 246, 0.2);
+            font-weight: 500;
+        }
+
+        /* Terminal Console Logs */
+        .console-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(5, 7, 13, 0.85);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .console-logs {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            line-height: 1.45;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .log-line {
+            word-break: break-all;
+        }
+
+        .log-time {
+            color: var(--text-muted);
+        }
+
+        .log-category {
+            font-weight: 700;
+        }
+
+        .green .log-category { color: var(--accent-green); }
+        .green .log-message { color: #d1fae5; }
+        .cyan .log-category { color: var(--accent-cyan); }
+        .cyan .log-message { color: #e0f2fe; }
+        .violet .log-category { color: var(--accent-violet); }
+        .violet .log-message { color: #f5f3ff; }
+        .magenta .log-category { color: var(--accent-magenta); }
+        .magenta .log-message { color: #fce7f3; }
+        .yellow .log-category { color: var(--accent-yellow); }
+        .yellow .log-message { color: #fef3c7; }
+        .muted .log-category { color: var(--text-muted); }
+        .muted .log-message { color: var(--text-muted); }
+
+        /* Custom Scrollbar for Terminal */
+        .console-logs::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .console-logs::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .console-logs::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+        }
+
+        .console-logs::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 242, 254, 0.2);
+        }
+
+        /* Footer Visualizer Area */
+        footer {
+            height: 90px;
+            padding: 0 20px 20px 20px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .visualizer-container {
+            width: 580px;
+            max-width: 90vw;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 6px 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: border-color 0.3s ease;
+        }
+
+        .visualizer-container:hover {
+            border-color: var(--panel-border-hover);
+        }
+
+        .visualizer-title {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        #visualizer-canvas {
+            width: 100%;
+            height: 44px;
+            background: rgba(5, 7, 13, 0.7);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        /* Keyframes */
+        @keyframes pulse-dot {
+            0% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.6; }
+        }
+
+        @keyframes glow-pulse {
+            0% { text-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+            50% { text-shadow: 0 0 25px rgba(0, 242, 254, 0.5); }
+            100% { text-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .panels-container {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+                overflow-y: auto;
+            }
+            .panel {
+                width: 100%;
+                height: 48%;
+            }
+            .right-panel {
+                width: 100%;
+            }
+            .toggle-btn {
+                display: none; /* Hide sidebar toggles on small mobile screens */
+            }
+            footer {
+                padding: 10px;
+            }
+            .visualizer-container {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Fullscreen WebGL canvas for metaballs -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Splash Screen (Resume Audio Context Prompt) -->
+    <div id="splash-overlay">
+        <div class="splash-content">
+            <div class="splash-logo">A N T I G R A V I T Y</div>
+            <div class="splash-subtitle">Generative Music Soundscape</div>
+            <div class="splash-description">
+                An interactive generative audio-visual synth. Click on the screen to paint floating, musical metaballs of glowing color that drift, stretch, and merge together.
+            </div>
+            <div class="splash-instructions">
+                <ul>
+                    <li><span>Click/Tap</span> anywhere to spawn a melodic color blob.</li>
+                    <li><span>Click & Drag</span> to paint a path of glittering musical stardust.</li>
+                    <li><span>Collide</span> blobs to synthesize chime chords.</li>
+                    <li><span>Autoplay</span> generates ambient notes in the background.</li>
+                </ul>
+            </div>
+            <button class="splash-btn" id="init-btn">INITIALIZE SOUNDSCAPE</button>
+        </div>
+    </div>
+
+    <!-- UI Overlay Panels -->
+    <div id="app-container" class="hidden">
+        <!-- Header -->
+        <header>
+            <div class="header-title-container">
+                <div class="header-title">ANTIGRAVITY // GENERATIVE SOUNDSCAPE</div>
+                <div class="header-subtitle">INTERACTIVE MUSIC TERMINAL</div>
+            </div>
+            <div class="header-stats">
+                <div class="status-indicator" id="status-indicator">
+                    <span class="status-dot active"></span>
+                    <span>AUDIO: ACTIVE</span>
+                </div>
+                <div class="header-stat-item">
+                    BLOBS: <span id="blob-count-stat">0</span> / 60
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar Panels -->
+        <div class="panels-container">
+            <!-- Left panel: Synthesizer Controls -->
+            <aside class="panel" id="left-panel">
+                <button class="toggle-btn left-toggle" id="left-panel-toggle" title="Toggle Control Panel">&lt;</button>
+                <div class="panel-header">
+                    <div class="panel-title">CONTROL CENTER</div>
+                </div>
+                <div class="panel-content">
+                    
+                    <!-- Play / Pause Master -->
+                    <button class="play-pause-btn active" id="play-pause-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                        <span>PAUSE ENGINE</span>
+                    </button>
+
+                    <!-- Volume slider -->
+                    <div class="control-group">
+                        <div class="label-val-container">
+                            <label for="volume-slider">MASTER VOLUME</label>
+                            <div class="control-val"><span id="volume-val">70</span>%</div>
+                        </div>
+                        <input type="range" id="volume-slider" min="0" max="100" value="70">
+                    </div>
+
+                    <!-- Scale Selector -->
+                    <div class="control-group">
+                        <label for="scale-select">HARMONIC SCALE / MODE</label>
+                        <select id="scale-select">
+                            <option value="celestial">Celestial (F# Major Pentatonic)</option>
+                            <option value="melancholic">Melancholic (A Minor Pentatonic)</option>
+                            <option value="peaceful">Peaceful (C Major Pentatonic)</option>
+                            <option value="mystical">Mystical (Dorian Dreams)</option>
+                            <option value="bright">Bright (Lydian Waves)</option>
+                        </select>
+                    </div>
+
+                    <!-- Auto-Play Rate slider -->
+                    <div class="control-group">
+                        <div class="label-val-container">
+                            <label for="tempo-slider">AUTO NOTE DENSITY</label>
+                            <div class="control-val"><span id="tempo-val">1.0</span>x</div>
+                        </div>
+                        <input type="range" id="tempo-slider" min="0.2" max="3.0" step="0.1" value="1.0">
+                    </div>
+
+                    <!-- Blob decay slider -->
+                    <div class="control-group">
+                        <div class="label-val-container">
+                            <label for="decay-slider">BLOB EVAPORATION</label>
+                            <div class="control-val" id="decay-val">Normal</div>
+                        </div>
+                        <input type="range" id="decay-slider" min="1" max="5" value="3">
+                    </div>
+
+                    <!-- Auto soundscape toggle -->
+                    <div class="toggle-row">
+                        <span>AUTO GENERATE MELODY</span>
+                        <label class="switch">
+                            <input type="checkbox" id="autoplay-toggle" checked>
+                            <span class="slider-toggle"></span>
+                        </label>
+                    </div>
+
+                    <!-- Secondary Actions -->
+                    <button class="action-btn-secondary" id="clear-btn">CLEAR SOUNDSCAPE</button>
+
+                    <!-- Soundscape Presets -->
+                    <div class="presets-section">
+                        <div class="presets-title">SOUND ENVIRONMENT PRESETS</div>
+                        <div class="presets-grid">
+                            <button class="preset-btn" data-preset="deepSpace">DEEP SPACE</button>
+                            <button class="preset-btn" data-preset="chimeGarden">STARLIGHT</button>
+                            <button class="preset-btn" data-preset="mysticDrone">ETH DRONE</button>
+                        </div>
+                    </div>
+
+                </div>
+            </aside>
+
+            <!-- Right panel: Terminal Monitors -->
+            <aside class="panel" id="right-panel">
+                <button class="toggle-btn right-toggle" id="right-panel-toggle" title="Toggle Terminal Panel">&gt;</button>
+                <div class="panel-header">
+                    <div class="panel-title">SYSTEM MONITOR LOGS</div>
+                </div>
+                <div class="panel-content">
+                    <div class="console-container">
+                        <div class="console-logs" id="console-logs">
+                            <!-- Logs generated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Bottom bar (Realtime Oscilloscope Visualizer) -->
+        <footer>
+            <div class="visualizer-container">
+                <div class="visualizer-title">SYSTEM OUTPUT WAVEFORM // OSCILLOSCOPE</div>
+                <canvas id="visualizer-canvas"></canvas>
+            </div>
+        </footer>
+    </div>
+
+    <!-- WebGL Shaders and Audio Logic -->
+    <script>
+        // --- WebGL Shaders ---
+        const vsSource = `
+            attribute vec2 position;
+            varying vec2 vUv;
+            void main() {
+                vUv = position * 0.5 + 0.5;
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+        `;
+
+        const fsSource = `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            varying vec2 vUv;
+            uniform vec2 u_resolution;
+            uniform int u_blob_count;
+            uniform vec3 u_blobs[64]; // x, y, radius (normalized positions [0,1], radius in screen height ratio)
+            uniform vec3 u_colors[64]; // r, g, b
+            uniform float u_time;
+
+            void main() {
+                vec2 st = gl_FragCoord.xy / u_resolution.xy;
+                float aspect = u_resolution.x / u_resolution.y;
+                
+                // Aspect ratio corrected point for distance metrics
+                vec2 p = st;
+                p.x *= aspect;
+
+                float sum = 0.0;
+                vec3 color_sum = vec3(0.0);
+                float weight_sum = 0.0;
+
+                for (int i = 0; i < 64; i++) {
+                    if (i >= u_blob_count) break;
+                    
+                    vec3 b = u_blobs[i];
+                    vec2 blob_pos = b.xy;
+                    blob_pos.x *= aspect;
+                    
+                    float r = b.z;
+                    float d = distance(p, blob_pos);
+                    
+                    // Metaball math: f(d) = r^2 / d^2
+                    // Add small epsilon to prevent NaN division
+                    float val = (r * r) / (d * d + 0.00001);
+                    sum += val;
+                    
+                    color_sum += u_colors[i] * val;
+                    weight_sum += val;
+                }
+
+                // Antigravity Brand Background (deep space blue-black)
+                vec3 bg_color = vec3(0.024, 0.031, 0.059); // #06080f
+                vec3 final_color = bg_color;
+                
+                float threshold = 1.0;
+                
+                if (sum > threshold) {
+                    vec3 metaball_color = color_sum / (weight_sum + 0.0001);
+                    
+                    // Smooth antialiasing at the edge of the metaball
+                    float edge = smoothstep(threshold, threshold + 0.06, sum);
+                    
+                    // Glowing edge overlay border
+                    float border_width = 0.12;
+                    float border_mask = smoothstep(threshold, threshold + border_width, sum) * 
+                                      (1.0 - smoothstep(threshold + border_width, threshold + border_width + 0.06, sum));
+                    
+                    final_color = mix(bg_color, metaball_color, edge);
+                    
+                    // Add bright glowing outline
+                    vec3 border_color = metaball_color * 1.6;
+                    final_color += border_color * border_mask * 0.75;
+                } else {
+                    // Render soft auroral halo glow outside the metaball
+                    float glow = smoothstep(threshold - 0.85, threshold, sum);
+                    if (weight_sum > 0.0) {
+                        vec3 glow_color = color_sum / weight_sum;
+                        final_color = mix(final_color, glow_color * 0.45, glow * glow);
+                    }
+                }
+                
+                // Subtle scanline overlay for CLI feeling
+                float scanline = sin(st.y * 650.0 + u_time * 1.5) * 0.01;
+                final_color += vec3(scanline);
+                
+                // Subtle high-quality grain
+                float noise = fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453 + u_time * 0.03);
+                final_color += (noise - 0.5) * 0.012;
+
+                gl_FragColor = vec4(final_color, 1.0);
+            }
+        `;
+
+        // --- Music Scale Configurations ---
+        const SCALES = {
+            celestial: {
+                name: "F# Major Pentatonic (Celestial)",
+                notes: ['F#2', 'C#3', 'F#3', 'G#3', 'A#3', 'C#4', 'D#4', 'F#4', 'G#4', 'A#4', 'C#5', 'D#5', 'F#5', 'G#5', 'A#5', 'C#6', 'D#6']
+            },
+            melancholic: {
+                name: "A Minor Pentatonic (Melancholic)",
+                notes: ['A2', 'E3', 'A3', 'C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5', 'C6', 'D6', 'E6', 'G6']
+            },
+            peaceful: {
+                name: "C Major Pentatonic (Peaceful)",
+                notes: ['C2', 'G2', 'C3', 'D3', 'E3', 'G3', 'A3', 'C4', 'D4', 'E4', 'G4', 'A4', 'C5', 'D5', 'E5', 'G5', 'A5']
+            },
+            mystical: {
+                name: "Dorian Dreams (Mystical)",
+                notes: ['D2', 'A2', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5']
+            },
+            bright: {
+                name: "Lydian Waves (Bright)",
+                notes: ['F2', 'C3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5']
+            }
+        };
+
+        // Note frequencies mapping for Offline Web Audio Fallback
+        const NOTE_FREQS = {
+            'F#1': 46.25, 'C#2': 69.30, 'F#2': 92.50, 'A1': 55.00, 'E2': 82.41, 'A2': 110.00,
+            'C2': 65.41, 'G2': 98.00, 'C3': 130.81, 'D2': 73.42, 'D3': 146.83,
+            'F2': 87.31, 'F3': 174.61, 'G3': 196.00, 'E3': 164.81,
+            'F#3': 185.00, 'G#3': 207.65, 'A#3': 233.08, 'C#4': 277.18, 'D#4': 311.13,
+            'F#4': 369.99, 'G#4': 415.30, 'A#4': 466.16, 'C#5': 554.37, 'D#5': 622.25,
+            'F#5': 739.99, 'G#5': 830.61, 'A#5': 932.33, 'C#6': 1108.73, 'D#6': 1244.51,
+            'A3': 220.00, 'C4': 261.63, 'D4': 293.66, 'E4': 329.63, 'G4': 392.00, 'A4': 440.00,
+            'C5': 523.25, 'D5': 587.33, 'E5': 659.25, 'G5': 783.99, 'A5': 880.00, 'C6': 1046.50,
+            'D6': 1174.66, 'E6': 1318.51, 'G6': 1567.98, 'B3': 246.94, 'F4': 349.23, 'B4': 493.88,
+            'F5': 698.46
+        };
+
+        // --- Color Palettes ---
+        const COLOR_PALETTE = {
+            cyan: { name: 'Cyber Cyan', gl: [0.0, 0.95, 1.0], hex: '#00f2fe' },
+            magenta: { name: 'Laser Magenta', gl: [1.0, 0.0, 0.5], hex: '#ff007f' },
+            violet: { name: 'Quantum Violet', gl: [0.55, 0.3, 1.0], hex: '#8b5cf6' },
+            green: { name: 'Emerald Green', gl: [0.06, 0.73, 0.5], hex: '#10b981' },
+            yellow: { name: 'Solar Amber', gl: [1.0, 0.7, 0.0], hex: '#f59e0b' },
+            blue: { name: 'Electric Blue', gl: [0.1, 0.45, 1.0], hex: '#3b82f6' }
+        };
+
+        // --- Audio Fallback Engine ---
+        class NativeAudioFallback {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.masterGain = this.ctx.createGain();
+                this.masterGain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                this.masterGain.connect(this.ctx.destination);
+                this.droneOscs = [];
+            }
+            
+            setVolume(vol) {
+                if (this.masterGain) {
+                    this.masterGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                }
+            }
+            
+            playNote(noteName, frequency, duration = 3.0, pan = 0.0) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const panner = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.18, this.ctx.currentTime + 0.8);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                
+                if (panner) {
+                    panner.pan.setValueAtTime(pan, this.ctx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(panner);
+                    panner.connect(this.masterGain);
+                } else {
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                }
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playChime(frequency, pan = 0.0) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const panner = this.ctx.createStereoPanner ? this.ctx.createStereoPanner() : null;
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.2);
+                
+                if (panner) {
+                    panner.pan.setValueAtTime(pan, this.ctx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(panner);
+                    panner.connect(this.masterGain);
+                } else {
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                }
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 1.2);
+            }
+            
+            startDrone(freqs) {
+                this.stopDrone();
+                this.droneOscs = freqs.map(freq => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    
+                    gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.04, this.ctx.currentTime + 3.0); // slow swell
+                    
+                    osc.connect(gain);
+                    gain.connect(this.masterGain);
+                    osc.start();
+                    return { osc, gain };
+                });
+            }
+
+            stopDrone() {
+                if (this.droneOscs && this.droneOscs.length > 0) {
+                    this.droneOscs.forEach(d => {
+                        try {
+                            const currentVal = d.gain.gain.value;
+                            d.gain.gain.setValueAtTime(currentVal, this.ctx.currentTime);
+                            d.gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 2.0);
+                            setTimeout(() => {
+                                try { d.osc.stop(); } catch(e) {}
+                            }, 2000);
+                        } catch(e) {}
+                    });
+                    this.droneOscs = [];
+                }
+            }
+        }
+
+        // --- Math / Utility Helpers ---
+        function gainToDb(gain) {
+            if (gain <= 0) return -Infinity;
+            return 20 * Math.log10(gain);
+        }
+
+        // --- State Management ---
+        let gl;
+        let program;
+        let canvas = document.getElementById('webgl-canvas');
+        let blobs = [];
+        let isPaused = false;
+        let currentScaleKey = 'celestial';
+        let autoPlayEnabled = true;
+        let autoPlaySpeed = 1.0;
+        let decaySliderValue = 3;
+        let currentDecayRate = 0.00015; // standard evaporation
+
+        // WebGL locations
+        let uResolutionLoc, uBlobCountLoc, uBlobsLoc, uColorsLoc, uTimeLoc;
+        const blobsData = new Float32Array(64 * 3);
+        const colorsData = new Float32Array(64 * 3);
+
+        // Audio elements (Tone.js)
+        let audioInitialized = false;
+        let isAudioFallback = false;
+        let audioFallback = null;
+        let analyser = null;
+        let delay = null;
+        let reverb = null;
+        let droneSynth = null;
+        let droneFilter = null;
+        let lfo = null;
+        const synthChannels = [];
+        const chimeChannels = [];
+        let activeDroneNotes = [];
+        let currentChannelIndex = 0;
+        let currentChimeChannelIndex = 0;
+
+        // Interaction state
+        let isDragging = false;
+        let lastDragSpawn = 0;
+
+        // Auto melodic sequencer timer
+        let lastSpawnTime = 0;
+        let nextSpawnDelay = 3000;
+
+        // --- Blob Class ---
+        class BlobParticle {
+            constructor(x, y, radius, color, note, isDroplet = false) {
+                this.x = x; 
+                this.y = y; 
+                this.radius = 0.005; // starts tiny
+                this.targetRadius = radius;
+                this.color = [...color]; // [r, g, b]
+                this.note = note;
+                this.vx = (Math.random() - 0.5) * 0.0015;
+                this.vy = (Math.random() - 0.5) * 0.0015;
+                this.isDroplet = isDroplet;
+                this.growthSpeed = 0.03 + Math.random() * 0.02;
+                this.decayRate = currentDecayRate;
+                this.isMerged = false;
+            }
+
+            update() {
+                // Grow to target size
+                if (this.radius < this.targetRadius) {
+                    this.radius += (this.targetRadius - this.radius) * this.growthSpeed;
+                }
+
+                // Drifting
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Wall bouncing
+                const margin = this.radius * 0.4;
+                if (this.x < margin) {
+                    this.x = margin;
+                    this.vx *= -1;
+                } else if (this.x > 1.0 - margin) {
+                    this.x = 1.0 - margin;
+                    this.vx *= -1;
+                }
+
+                if (this.y < margin) {
+                    this.y = margin;
+                    this.vy *= -1;
+                } else if (this.y > 1.0 - margin) {
+                    this.y = 1.0 - margin;
+                    this.vy *= -1;
+                }
+
+                // Slow evaporation (decrease target size over time)
+                if (this.decayRate > 0) {
+                    this.targetRadius -= this.decayRate;
+                    if (this.targetRadius < 0.01) {
+                        this.isMerged = true; // evaporate
+                    }
+                }
+            }
+        }
+
+        // --- UI Elements Reference ---
+        const volumeSlider = document.getElementById('volume-slider');
+        const volumeValText = document.getElementById('volume-val');
+        const scaleSelect = document.getElementById('scale-select');
+        const tempoSlider = document.getElementById('tempo-slider');
+        const tempoValText = document.getElementById('tempo-val');
+        const decaySlider = document.getElementById('decay-slider');
+        const decayValText = document.getElementById('decay-val');
+        const autoplayToggle = document.getElementById('autoplay-toggle');
+        const clearBtn = document.getElementById('clear-btn');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const initBtn = document.getElementById('init-btn');
+        const splashOverlay = document.getElementById('splash-overlay');
+        const appContainer = document.getElementById('app-container');
+        const consoleLogs = document.getElementById('console-logs');
+        const blobCountStat = document.getElementById('blob-count-stat');
+        const visualizerCanvas = document.getElementById('visualizer-canvas');
+        const visCtx = visualizerCanvas.getContext('2d');
+
+        // Collapsible UI panels
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        const leftPanelToggle = document.getElementById('left-panel-toggle');
+        const rightPanelToggle = document.getElementById('right-panel-toggle');
+
+        // --- Helper: Console Log Print ---
+        function logToTerminal(category, message, colorClass = '') {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            
+            const logLine = document.createElement('div');
+            logLine.className = `log-line ${colorClass}`;
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'log-time';
+            timeSpan.textContent = `[${timeStr}] `;
+            
+            const catSpan = document.createElement('span');
+            catSpan.className = 'log-category';
+            catSpan.textContent = `${category}: `;
+            
+            const msgSpan = document.createElement('span');
+            msgSpan.className = 'log-message';
+            msgSpan.textContent = message;
+            
+            logLine.appendChild(timeSpan);
+            logLine.appendChild(catSpan);
+            logLine.appendChild(msgSpan);
+            
+            consoleLogs.appendChild(logLine);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+            
+            // Limit terminal logs to 50 entries
+            while (consoleLogs.children.length > 50) {
+                consoleLogs.removeChild(consoleLogs.firstChild);
+            }
+        }
+
+        // --- UI Listeners (Pre-init) ---
+        // Toggle side panels
+        leftPanelToggle.addEventListener('click', () => {
+            leftPanel.classList.toggle('collapsed-left');
+            leftPanelToggle.textContent = leftPanel.classList.contains('collapsed-left') ? '>' : '<';
+        });
+
+        rightPanelToggle.addEventListener('click', () => {
+            rightPanel.classList.toggle('collapsed-right');
+            rightPanelToggle.textContent = rightPanel.classList.contains('collapsed-right') ? '<' : '>';
+        });
+
+        // --- Initialize WebGL Engine ---
+        function initWebGL() {
+            canvas = document.getElementById('webgl-canvas');
+            gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) {
+                alert('WebGL is not supported by your browser. Falling back to simple visual rendering.');
+                return;
+            }
+
+            // Create shaders
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, vsSource);
+            gl.compileShader(vs);
+            if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+                console.error('Vertex shader compile error:', gl.getShaderInfoLog(vs));
+            }
+
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, fsSource);
+            gl.compileShader(fs);
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                console.error('Fragment shader compile error:', gl.getShaderInfoLog(fs));
+            }
+
+            // Program
+            program = gl.createProgram();
+            gl.attachShader(program, vs);
+            gl.attachShader(program, fs);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error('Program link error:', gl.getProgramInfoLog(program));
+            }
+
+            gl.useProgram(program);
+
+            // Setup vertices
+            const vertices = new Float32Array([
+                -1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
+                -1.0,  1.0,  1.0, -1.0,  1.0,  1.0
+            ]);
+            const vertexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const positionAttrib = gl.getAttribLocation(program, 'position');
+            gl.enableVertexAttribArray(positionAttrib);
+            gl.vertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, 0);
+
+            // Get uniform locations
+            uResolutionLoc = gl.getUniformLocation(program, 'u_resolution');
+            uBlobCountLoc = gl.getUniformLocation(program, 'u_blob_count');
+            uBlobsLoc = gl.getUniformLocation(program, 'u_blobs[0]') || gl.getUniformLocation(program, 'u_blobs');
+            uColorsLoc = gl.getUniformLocation(program, 'u_colors[0]') || gl.getUniformLocation(program, 'u_colors');
+            uTimeLoc = gl.getUniformLocation(program, 'u_time');
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        function resizeCanvas() {
+            if (!canvas || !gl) return;
+            const dpr = window.devicePixelRatio || 1;
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            if (canvas.width !== width || canvas.height !== height) {
+                canvas.width = width;
+                canvas.height = height;
+                gl.viewport(0, 0, width, height);
+            }
+        }
+
+        // --- Initialize Audio Engine (Tone.js) ---
+        function initializeToneAudio() {
+            // Reverb and feedback delay setup
+            delay = new Tone.FeedbackDelay("0.6s", 0.45);
+            reverb = new Tone.Reverb(5.5);
+            
+            delay.wet.value = 0.28;
+            reverb.wet.value = 0.42;
+            
+            // Parallel and serial chains
+            delay.connect(reverb);
+            reverb.connect(Tone.Destination);
+            
+            // Setup spatialized melody synths (voices pool)
+            const voicesCount = 6;
+            for (let i = 0; i < voicesCount; i++) {
+                const panner = new Tone.Panner(0);
+                const voice = new Tone.Synth({
+                    oscillator: {
+                        type: "triangle"
+                    },
+                    envelope: {
+                        attack: 0.8,
+                        decay: 1.0,
+                        sustain: 0.6,
+                        release: 3.5
+                    }
+                });
+                
+                // Synth -> Panner -> Delay & Reverb (blend)
+                voice.connect(panner);
+                panner.connect(delay);
+                panner.connect(reverb);
+                
+                synthChannels.push({ voice, panner });
+            }
+            
+            // Setup spatialized chime synths for merges
+            const chimeVoicesCount = 4;
+            for (let i = 0; i < chimeVoicesCount; i++) {
+                const panner = new Tone.Panner(0);
+                const voice = new Tone.Synth({
+                    oscillator: {
+                        type: "sine"
+                    },
+                    envelope: {
+                        attack: 0.005,
+                        decay: 0.45,
+                        sustain: 0.0,
+                        release: 1.5
+                    }
+                });
+                
+                voice.connect(panner);
+                // Connect chimes to delay and reverb directly
+                panner.connect(delay);
+                panner.connect(reverb);
+                
+                chimeChannels.push({ voice, panner });
+            }
+
+            // Deep background drone setup
+            droneSynth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: {
+                    type: "sine"
+                },
+                envelope: {
+                    attack: 6.0,
+                    decay: 2.0,
+                    sustain: 1.0,
+                    release: 6.0
+                }
+            });
+
+            // Modulated lowpass filter for drone warm sweeps
+            droneFilter = new Tone.Filter({
+                frequency: 180,
+                type: "lowpass",
+                Q: 0.8
+            });
+
+            droneSynth.connect(droneFilter);
+            droneFilter.connect(reverb);
+
+            // Modulating filter cutoff slowly
+            lfo = new Tone.LFO({
+                frequency: 0.03, // 33s wave sweep
+                min: 110,
+                max: 300
+            });
+            lfo.connect(droneFilter.frequency);
+            lfo.start();
+
+            // Set up Tone.js Analyser
+            analyser = new Tone.Analyser("waveform", 128);
+            reverb.connect(analyser); // Analyze output of reverb
+
+            // Set Initial Volume
+            const vol = parseFloat(volumeSlider.value);
+            Tone.Destination.volume.value = gainToDb(vol / 100);
+        }
+
+        // --- Audio Fallback Initialization ---
+        function initializeFallbackAudio() {
+            isAudioFallback = true;
+            audioFallback = new NativeAudioFallback();
+            
+            // Create fallback analysis node
+            const ctx = audioFallback.ctx;
+            const fallbackAnalyser = ctx.createAnalyser();
+            fallbackAnalyser.fftSize = 256;
+            
+            // Route output through fallback analyser
+            audioFallback.masterGain.disconnect();
+            audioFallback.masterGain.connect(fallbackAnalyser);
+            fallbackAnalyser.connect(ctx.destination);
+            
+            // Mock Tone.js Analyser API
+            analyser = {
+                getValue: () => {
+                    const dataArray = new Uint8Array(fallbackAnalyser.frequencyBinCount);
+                    fallbackAnalyser.getByteTimeDomainData(dataArray);
+                    
+                    const floatArray = new Float32Array(dataArray.length);
+                    for (let i = 0; i < dataArray.length; i++) {
+                        floatArray[i] = (dataArray[i] - 128) / 128;
+                    }
+                    return floatArray;
+                }
+            };
+            
+            const vol = parseFloat(volumeSlider.value);
+            audioFallback.setVolume(vol / 100);
+        }
+
+        // --- Play Spatial Note ---
+        function triggerNoteAudio(noteName, panValue, velocity = 0.5) {
+            if (!audioInitialized) return;
+
+            if (isAudioFallback) {
+                const freq = NOTE_FREQS[noteName];
+                if (freq) {
+                    audioFallback.playNote(noteName, freq, 3.5, panValue);
+                }
+            } else {
+                // Round-robin selection of channel
+                const channel = synthChannels[currentChannelIndex];
+                currentChannelIndex = (currentChannelIndex + 1) % synthChannels.length;
+                
+                channel.panner.pan.rampTo(panValue, 0.05);
+                channel.voice.triggerAttackRelease(noteName, "2n", undefined, velocity);
+            }
+        }
+
+        // --- Play Spatial Merge Chime Chord ---
+        function triggerMergeChimes(note1, note2, panValue) {
+            if (!audioInitialized) return;
+
+            if (isAudioFallback) {
+                const freq1 = NOTE_FREQS[note1] * 2.0; // Play chime 1 octave up
+                const freq2 = NOTE_FREQS[note2] * 2.0;
+                audioFallback.playChime(freq1, panValue);
+                audioFallback.playChime(freq2, panValue);
+            } else {
+                // Trigger note1 on chime channel A
+                const chan1 = chimeChannels[currentChimeChannelIndex];
+                currentChimeChannelIndex = (currentChimeChannelIndex + 1) % chimeChannels.length;
+                chan1.panner.pan.setValueAtTime(panValue, Tone.now());
+                chan1.voice.triggerAttackRelease(note1, "4n", undefined, 0.35);
+
+                // Trigger note2 on chime channel B
+                const chan2 = chimeChannels[currentChimeChannelIndex];
+                currentChimeChannelIndex = (currentChimeChannelIndex + 1) % chimeChannels.length;
+                chan2.panner.pan.setValueAtTime(panValue, Tone.now());
+                chan2.voice.triggerAttackRelease(note2, "4n", undefined, 0.25);
+            }
+        }
+
+        // --- Update Ambient Drone Notes ---
+        function updateDroneNotes() {
+            if (!audioInitialized) return;
+
+            const scaleObj = SCALES[currentScaleKey];
+            const droneNotes = [scaleObj.notes[0], scaleObj.notes[1], scaleObj.notes[2]];
+            
+            if (isAudioFallback) {
+                const freqs = droneNotes.map(n => NOTE_FREQS[n]);
+                audioFallback.startDrone(freqs);
+            } else {
+                if (activeDroneNotes.length > 0) {
+                    droneSynth.triggerRelease(activeDroneNotes);
+                }
+                activeDroneNotes = droneNotes;
+                droneSynth.triggerAttack(activeDroneNotes, undefined, 0.12);
+            }
+            logToTerminal('DRONE', `Drone sweep key changed: ${droneNotes.join(' - ')}`, 'yellow');
+        }
+
+        // --- Interaction Handler ---
+        function spawnBlobAtPosition(clientX, clientY, isDroplet = false) {
+            if (!audioInitialized || isPaused) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (clientX - rect.left) / rect.width;
+            const y = 1.0 - (clientY - rect.top) / rect.height; // invert vertical axis for WebGL
+
+            // Prevent clicks directly on the screen edge
+            if (x < 0.02 || x > 0.98 || y < 0.02 || y > 0.98) return;
+
+            // Pick a scale note based on y
+            const scaleObj = SCALES[currentScaleKey];
+            let noteIndex;
+            let radius;
+            let decay = currentDecayRate;
+            let velocity = 0.5;
+
+            // Random color selection from Antigravity palette
+            const colorKeys = Object.keys(COLOR_PALETTE);
+            const randomColorKey = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+            const colorData = COLOR_PALETTE[randomColorKey];
+
+            if (isDroplet) {
+                // Glitter stardust: small, short decay, higher range notes
+                const offset = Math.floor(scaleObj.notes.length * 0.55);
+                const range = scaleObj.notes.length - offset;
+                noteIndex = offset + Math.floor(y * range);
+                noteIndex = Math.min(scaleObj.notes.length - 1, Math.max(0, noteIndex));
+                
+                radius = 0.02 + Math.random() * 0.015;
+                decay = currentDecayRate * 4.5; // evaporates 4.5x faster
+                velocity = 0.18;
+            } else {
+                // Main user blob: standard size, normal decay, full scale range
+                noteIndex = Math.floor(y * scaleObj.notes.length);
+                noteIndex = Math.min(scaleObj.notes.length - 1, Math.max(0, noteIndex));
+                
+                radius = 0.065 + Math.random() * 0.055;
+            }
+
+            const noteName = scaleObj.notes[noteIndex];
+            const panValue = x * 2.0 - 1.0; // map 0..1 to -1..1 panning
+
+            const newBlob = new BlobParticle(x, y, radius, colorData.gl, noteName, isDroplet);
+            newBlob.decayRate = decay;
+
+            // Enforce maximum buffer limit of 60 active blobs
+            if (blobs.length >= 60) {
+                blobs.shift(); // Evaporate oldest
+            }
+            blobs.push(newBlob);
+
+            // Play spatial synthesizer sound
+            triggerNoteAudio(noteName, panValue, velocity);
+
+            if (isDroplet) {
+                logToTerminal('DROPLET', `Stardust stippled at (${Math.round(x*100)}%, ${Math.round(y*100)}%) -> Note: ${noteName}`, 'violet');
+            } else {
+                logToTerminal('SPAWN', `Active blob painted at (${Math.round(x*100)}%, ${Math.round(y*100)}%) | note: ${noteName} | color: ${colorData.name}`, 'green');
+            }
+        }
+
+        // --- Generative Background Spawner ---
+        function spawnRandomBlob() {
+            if (!audioInitialized || isPaused) return;
+
+            const x = 0.1 + Math.random() * 0.8;
+            const y = 0.2 + Math.random() * 0.6;
+            const radius = 0.06 + Math.random() * 0.05;
+
+            // Pick note
+            const scaleObj = SCALES[currentScaleKey];
+            const noteIndex = Math.floor(y * scaleObj.notes.length);
+            const noteName = scaleObj.notes[noteIndex];
+            const panValue = x * 2.0 - 1.0;
+
+            // Color selection
+            const colorKeys = Object.keys(COLOR_PALETTE);
+            const randomColorKey = colorKeys[Math.floor(Math.random() * colorKeys.length)];
+            const colorData = COLOR_PALETTE[randomColorKey];
+
+            const newBlob = new BlobParticle(x, y, radius, colorData.gl, noteName, false);
+            
+            if (blobs.length >= 60) {
+                blobs.shift();
+            }
+            blobs.push(newBlob);
+
+            triggerNoteAudio(noteName, panValue, 0.45);
+            logToTerminal('AUTO', `Generative note triggered: ${noteName} | coordinates: (${Math.round(x*100)}%, ${Math.round(y*100)}%)`, 'cyan');
+        }
+
+        // --- Blob Physics & Intersection Solver ---
+        function updatePhysics() {
+            // Update individual physics attributes
+            for (let i = 0; i < blobs.length; i++) {
+                blobs[i].update();
+            }
+
+            // Resolve intersections and merges
+            for (let i = 0; i < blobs.length; i++) {
+                const b1 = blobs[i];
+                if (b1.isMerged) continue;
+
+                for (let j = i + 1; j < blobs.length; j++) {
+                    const b2 = blobs[j];
+                    if (b2.isMerged) continue;
+
+                    // Compute aspect-corrected distance
+                    const aspect = canvas.width / canvas.height;
+                    const dx = (b1.x - b2.x) * aspect;
+                    const dy = b1.y - b2.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Merge when centers cross below 82% of combined radii
+                    const mergeThreshold = (b1.radius + b2.radius) * 0.82;
+
+                    if (dist < mergeThreshold) {
+                        let larger = b1;
+                        let smaller = b2;
+                        if (b1.radius < b2.radius) {
+                            larger = b2;
+                            smaller = b1;
+                        }
+
+                        // Absorb smaller blob
+                        smaller.isMerged = true;
+
+                        // Conserve area (radius_new = sqrt(r1^2 + r2^2))
+                        const mergedRadius = Math.min(0.24, Math.sqrt(larger.radius * larger.radius + smaller.radius * smaller.radius));
+                        larger.targetRadius = mergedRadius;
+
+                        // Conserve Momentum
+                        const m1 = larger.radius * larger.radius;
+                        const m2 = smaller.radius * smaller.radius;
+                        const totalMass = m1 + m2;
+
+                        larger.vx = (larger.vx * m1 + smaller.vx * m2) / totalMass;
+                        larger.vy = (larger.vy * m1 + smaller.vy * m2) / totalMass;
+
+                        // Pull larger blob toward the center of mass
+                        larger.x = (larger.x * m1 + smaller.x * m2) / totalMass;
+                        larger.y = (larger.y * m1 + smaller.y * m2) / totalMass;
+
+                        // Blend colors (weighted by mass/area)
+                        const blendRatio = m2 / totalMass;
+                        larger.color[0] = larger.color[0] * (1.0 - blendRatio) + smaller.color[0] * blendRatio;
+                        larger.color[1] = larger.color[1] * (1.0 - blendRatio) + smaller.color[1] * blendRatio;
+                        larger.color[2] = larger.color[2] * (1.0 - blendRatio) + smaller.color[2] * blendRatio;
+
+                        // Trigger chime chord at collision coordinates
+                        const midX = (larger.x + smaller.x) / 2.0;
+                        const pan = midX * 2.0 - 1.0;
+
+                        const scaleObj = SCALES[currentScaleKey];
+                        const baseIndex = Math.min(scaleObj.notes.length - 1, Math.floor(larger.y * scaleObj.notes.length));
+                        // Add fifth or third note interval above in pentatonic scale
+                        const fifthIndex = Math.min(scaleObj.notes.length - 1, baseIndex + 3);
+
+                        const chimeNote1 = scaleObj.notes[baseIndex];
+                        const chimeNote2 = scaleObj.notes[fifthIndex];
+
+                        triggerMergeChimes(chimeNote1, chimeNote2, pan);
+                        logToTerminal('MERGE', `Metaballs integrated: ${chimeNote1} + ${chimeNote2} chime chord generated`, 'magenta');
+                    }
+                }
+            }
+
+            // Remove evaporated and merged particles
+            blobs = blobs.filter(b => !b.isMerged);
+            blobCountStat.textContent = blobs.length;
+        }
+
+        // --- Render WebGL Frame ---
+        function renderWebGL(time) {
+            if (!gl || !program) return;
+
+            // Load uniforms
+            gl.uniform2f(uResolutionLoc, canvas.width, canvas.height);
+            gl.uniform1f(uTimeLoc, time * 0.001);
+
+            // Populate uniform arrays
+            for (let i = 0; i < 64; i++) {
+                if (i < blobs.length) {
+                    const b = blobs[i];
+                    blobsData[i * 3 + 0] = b.x;
+                    blobsData[i * 3 + 1] = b.y;
+                    blobsData[i * 3 + 2] = b.radius;
+
+                    colorsData[i * 3 + 0] = b.color[0];
+                    colorsData[i * 3 + 1] = b.color[1];
+                    colorsData[i * 3 + 2] = b.color[2];
+                } else {
+                    blobsData[i * 3 + 0] = 0.0;
+                    blobsData[i * 3 + 1] = 0.0;
+                    blobsData[i * 3 + 2] = 0.0;
+
+                    colorsData[i * 3 + 0] = 0.0;
+                    colorsData[i * 3 + 1] = 0.0;
+                    colorsData[i * 3 + 2] = 0.0;
+                }
+            }
+
+            gl.uniform1i(uBlobCountLoc, blobs.length);
+            gl.uniform3fv(uBlobsLoc, blobsData);
+            gl.uniform3fv(uColorsLoc, colorsData);
+
+            // Draw full screen quad
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        // --- Draw Realtime Oscilloscope ---
+        function drawOscilloscope() {
+            const width = visualizerCanvas.width = visualizerCanvas.parentElement.clientWidth;
+            const height = visualizerCanvas.height = 44;
+
+            visCtx.clearRect(0, 0, width, height);
+
+            if (!audioInitialized || isPaused) {
+                // Flat standby baseline line
+                visCtx.beginPath();
+                visCtx.lineWidth = 1.5;
+                visCtx.strokeStyle = 'rgba(0, 242, 254, 0.2)';
+                visCtx.moveTo(0, height / 2);
+                visCtx.lineTo(width, height / 2);
+                visCtx.stroke();
+                return;
+            }
+
+            let values;
+            try {
+                values = analyser.getValue();
+            } catch (e) {
+                return;
+            }
+
+            visCtx.beginPath();
+            visCtx.lineWidth = 1.8;
+            visCtx.strokeStyle = '#00f2fe';
+            visCtx.shadowBlur = 8;
+            visCtx.shadowColor = '#00f2fe';
+
+            const sliceWidth = width / values.length;
+            let x = 0;
+
+            for (let i = 0; i < values.length; i++) {
+                const v = values[i];
+                const y = (v * 0.75 + 1.0) * (height / 2.0);
+
+                if (i === 0) {
+                    visCtx.moveTo(x, y);
+                } else {
+                    visCtx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+
+            visCtx.lineTo(width, height / 2.0);
+            visCtx.stroke();
+            visCtx.shadowBlur = 0; // Reset canvas shadows
+        }
+
+        // --- Main Engine Loop ---
+        function mainLoop(time) {
+            requestAnimationFrame(mainLoop);
+
+            updatePhysics();
+            renderWebGL(time);
+            drawOscilloscope();
+
+            // Sequenced Melody Generator
+            if (audioInitialized && autoplayToggle.checked && !isPaused) {
+                const now = performance.now();
+                if (now - lastSpawnTime > nextSpawnDelay) {
+                    spawnRandomBlob();
+                    lastSpawnTime = now;
+                    // Randomize next interval slightly (duration density factor divided by autoPlaySpeed)
+                    nextSpawnDelay = (2500 + Math.random() * 2500) / autoPlaySpeed;
+                }
+            }
+        }
+
+        // --- User Interaction Listeners ---
+        // Mouse Down
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            spawnBlobAtPosition(e.clientX, e.clientY, false);
+        });
+
+        // Mouse Drag (stardust stream)
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const now = performance.now();
+            if (now - lastDragSpawn > 110) { // Throttle drag spawns to 110ms
+                spawnBlobAtPosition(e.clientX, e.clientY, true); // true = droplet
+                lastDragSpawn = now;
+            }
+        });
+
+        // Mouse Up / Leave
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+
+        // Touch Interaction (Mobile)
+        canvas.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            const touch = e.touches[0];
+            spawnBlobAtPosition(touch.clientX, touch.clientY, false);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            const now = performance.now();
+            if (now - lastDragSpawn > 110) {
+                spawnBlobAtPosition(touch.clientX, touch.clientY, true);
+                lastDragSpawn = now;
+            }
+        });
+
+        canvas.addEventListener('touchend', () => isDragging = false);
+
+        // --- UI Settings Controls Bindings ---
+        // Volume
+        volumeSlider.addEventListener('input', (e) => {
+            const vol = parseFloat(e.target.value);
+            volumeValText.textContent = vol;
+            if (audioInitialized) {
+                if (isAudioFallback) {
+                    audioFallback.setVolume(vol / 100);
+                } else {
+                    Tone.Destination.volume.rampTo(gainToDb(vol / 100), 0.1);
+                }
+            }
+        });
+
+        // Scale Select
+        scaleSelect.addEventListener('change', (e) => {
+            currentScaleKey = e.target.value;
+            if (audioInitialized) {
+                updateDroneNotes();
+            }
+        });
+
+        // Auto Note Tempo
+        tempoSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            autoPlaySpeed = val;
+            tempoValText.textContent = val.toFixed(1);
+        });
+
+        // Blob decay slider
+        decaySlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value);
+            decaySliderValue = val;
+            
+            // Map values to decay speeds
+            let label = "Normal";
+            if (val === 1) {
+                label = "None (Infinite)";
+                currentDecayRate = 0;
+            } else if (val === 2) {
+                label = "Slow";
+                currentDecayRate = 0.00004;
+            } else if (val === 3) {
+                label = "Normal";
+                currentDecayRate = 0.00015;
+            } else if (val === 4) {
+                label = "Fast";
+                currentDecayRate = 0.00045;
+            } else if (val === 5) {
+                label = "Rapid";
+                currentDecayRate = 0.0011;
+            }
+            
+            decayValText.textContent = label;
+            
+            // Immediately apply new decay rates to all existing blobs
+            blobs.forEach(b => {
+                b.decayRate = b.isDroplet ? currentDecayRate * 4.5 : currentDecayRate;
+            });
+            
+            logToTerminal('SYSTEM', `Blob decay rates adjusted to: ${label}`, 'muted');
+        });
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            blobs = [];
+            logToTerminal('SYSTEM', 'Cleared all active visual elements', 'muted');
+        });
+
+        // Pause/Resume engine button
+        playPauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            const volume = parseFloat(volumeSlider.value);
+            
+            if (isAudioFallback) {
+                audioFallback.setVolume(isPaused ? 0 : volume / 100);
+            } else {
+                Tone.Destination.mute = isPaused;
+            }
+
+            if (isPaused) {
+                playPauseBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    <span>RESUME ENGINE</span>
+                `;
+                playPauseBtn.classList.remove('active');
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="status-dot paused"></span>
+                    <span>AUDIO: STANDBY</span>
+                `;
+                logToTerminal('SYSTEM', 'Soundscape suspended in standby mode', 'muted');
+            } else {
+                playPauseBtn.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="4" width="4" height="16"></rect>
+                        <rect x="14" y="4" width="4" height="16"></rect>
+                    </svg>
+                    <span>PAUSE ENGINE</span>
+                `;
+                playPauseBtn.classList.add('active');
+                document.getElementById('status-indicator').innerHTML = `
+                    <span class="status-dot active"></span>
+                    <span>AUDIO: ACTIVE</span>
+                `;
+                logToTerminal('SYSTEM', 'Soundscape engine resumed', 'green');
+            }
+        });
+
+        // Autoplay toggle log
+        autoplayToggle.addEventListener('change', (e) => {
+            logToTerminal('SYSTEM', `Autoplay sequencer ${e.target.checked ? 'ENABLED' : 'DISABLED'}`, 'muted');
+        });
+
+        // --- Soundscape Presets System ---
+        const PRESETS = {
+            deepSpace: {
+                scale: 'celestial',
+                volume: 80,
+                tempo: 0.4,
+                decay: 1, // None
+                autoplay: true
+            },
+            chimeGarden: {
+                scale: 'peaceful',
+                volume: 65,
+                tempo: 1.6,
+                decay: 4, // Fast
+                autoplay: true
+            },
+            mysticDrone: {
+                scale: 'mystical',
+                volume: 75,
+                tempo: 0.2,
+                decay: 2, // Slow
+                autoplay: true
+            }
+        };
+
+        const presetBtns = document.querySelectorAll('.preset-btn');
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const presetKey = e.target.getAttribute('data-preset');
+                const preset = PRESETS[presetKey];
+                if (!preset) return;
+
+                // Remove active classes
+                presetBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Apply changes to UI and JS state
+                scaleSelect.value = preset.scale;
+                currentScaleKey = preset.scale;
+
+                volumeSlider.value = preset.volume;
+                volumeValText.textContent = preset.volume;
+
+                tempoSlider.value = preset.tempo;
+                autoPlaySpeed = preset.tempo;
+                tempoValText.textContent = preset.tempo.toFixed(1);
+
+                decaySlider.value = preset.decay;
+                decaySlider.dispatchEvent(new Event('input')); // updates label and JS variables
+
+                autoplayToggle.checked = preset.autoplay;
+
+                if (audioInitialized) {
+                    if (isAudioFallback) {
+                        audioFallback.setVolume(preset.volume / 100);
+                    } else {
+                        Tone.Destination.volume.rampTo(gainToDb(preset.volume / 100), 0.2);
+                    }
+                    updateDroneNotes();
+                }
+
+                logToTerminal('PRESET', `Applied soundscape profile: ${e.target.textContent}`, 'violet');
+            });
+        });
+
+        // --- Audio Onboarding Flow ---
+        initBtn.addEventListener('click', async () => {
+            initBtn.disabled = true;
+            initBtn.textContent = 'INITIALIZING...';
+            
+            try {
+                // Initialize Tone.js audio engine if library loaded successfully
+                if (window.Tone) {
+                    await Tone.start();
+                    console.log('Tone.js audio engine running');
+                    isAudioFallback = false;
+                } else {
+                    console.warn('Tone.js library loaded failed. Initializing offline native Web Audio fallback.');
+                    initializeFallbackAudio();
+                }
+            } catch (e) {
+                console.error('Tone.js start failed, using native fallback:', e);
+                initializeFallbackAudio();
+            }
+
+            if (!isAudioFallback) {
+                initializeToneAudio();
+            }
+
+            audioInitialized = true;
+
+            // Trigger onboarding visual/audio elements
+            splashOverlay.classList.add('fade-out');
+            appContainer.classList.remove('hidden');
+            // Force reflow and add class to handle CSS transition fade-in
+            appContainer.offsetHeight;
+            appContainer.classList.add('fade-in');
+
+            // Set background drone scale
+            updateDroneNotes();
+
+            // Spawn 5 initial blobs to start the experience with motion
+            for (let i = 0; i < 5; i++) {
+                setTimeout(spawnRandomBlob, i * 400);
+            }
+
+            logToTerminal('SYSTEM', 'Antigravity core audio context started', 'green');
+            logToTerminal('SYSTEM', `Pipeline channel: ${isAudioFallback ? 'Native Audio Context Fallback' : 'Tone.js Multi-channel DSP'}`, 'cyan');
+
+            // Clear initialization overlap display
+            setTimeout(() => {
+                splashOverlay.style.display = 'none';
+            }, 800);
+        });
+
+        // --- Start Rendering ---
+        initWebGL();
+        requestAnimationFrame(mainLoop);
+    </script>
+</body>
+</html>
