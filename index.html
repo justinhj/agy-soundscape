@@ -848,6 +848,15 @@
                         </label>
                     </div>
 
+                    <!-- Ambient drone toggle -->
+                    <div class="toggle-row">
+                        <span>AMBIENT BACKGROUND DRONE</span>
+                        <label class="switch">
+                            <input type="checkbox" id="drone-toggle">
+                            <span class="slider-toggle"></span>
+                        </label>
+                    </div>
+
                     <!-- Secondary Actions -->
                     <button class="action-btn-secondary" id="clear-btn">CLEAR SOUNDSCAPE</button>
 
@@ -1253,6 +1262,7 @@
         const decaySlider = document.getElementById('decay-slider');
         const decayValText = document.getElementById('decay-val');
         const autoplayToggle = document.getElementById('autoplay-toggle');
+        const droneToggle = document.getElementById('drone-toggle');
         const clearBtn = document.getElementById('clear-btn');
         const playPauseBtn = document.getElementById('play-pause-btn');
         const initBtn = document.getElementById('init-btn');
@@ -1538,9 +1548,27 @@
             }
         }
 
+        // --- Stop Ambient Drone Notes ---
+        function stopDroneAudio() {
+            if (!audioInitialized) return;
+            if (isAudioFallback) {
+                audioFallback.stopDrone();
+            } else {
+                if (activeDroneNotes.length > 0) {
+                    droneSynth.triggerRelease(activeDroneNotes);
+                    activeDroneNotes = [];
+                }
+            }
+        }
+
         // --- Update Ambient Drone Notes ---
         function updateDroneNotes() {
             if (!audioInitialized) return;
+
+            if (!droneToggle.checked) {
+                stopDroneAudio();
+                return;
+            }
 
             const scaleObj = SCALES[currentScaleKey];
             const droneNotes = [scaleObj.notes[0], scaleObj.notes[1], scaleObj.notes[2]];
@@ -2086,6 +2114,19 @@
             logToTerminal('SYSTEM', `Autoplay sequencer ${e.target.checked ? 'ENABLED' : 'DISABLED'}`, 'muted');
         });
 
+        // Drone toggle listener
+        droneToggle.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            logToTerminal('SYSTEM', `Ambient background drone ${enabled ? 'ENABLED' : 'DISABLED'}`, 'muted');
+            if (audioInitialized) {
+                if (enabled) {
+                    updateDroneNotes();
+                } else {
+                    stopDroneAudio();
+                }
+            }
+        });
+
         // --- Soundscape Presets System ---
         const PRESETS = {
             deepSpace: {
@@ -2093,21 +2134,24 @@
                 volume: 80,
                 tempo: 0.4,
                 decay: 1, // None
-                autoplay: true
+                autoplay: true,
+                drone: false
             },
             chimeGarden: {
                 scale: 'peaceful',
                 volume: 65,
                 tempo: 1.6,
                 decay: 4, // Fast
-                autoplay: true
+                autoplay: true,
+                drone: false
             },
             mysticDrone: {
                 scale: 'mystical',
                 volume: 75,
                 tempo: 0.2,
                 decay: 2, // Slow
-                autoplay: true
+                autoplay: true,
+                drone: true
             }
         };
 
@@ -2137,6 +2181,7 @@
                 decaySlider.dispatchEvent(new Event('input')); // updates label and JS variables
 
                 autoplayToggle.checked = preset.autoplay;
+                droneToggle.checked = !!preset.drone;
 
                 if (audioInitialized) {
                     if (isAudioFallback) {

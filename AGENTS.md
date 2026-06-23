@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Antigravity** is a self-contained, single-page web application that combines tranquil generative music with interactive visual metaballs.
+**AGY-SOUNDSCAPE** (also known as **Antigravity**) is a self-contained, single-page web application that combines tranquil generative music with interactive visual metaballs.
 
 It was created in response to this prompt:
 
@@ -13,10 +13,10 @@ It was created in response to this prompt:
 
 The app features:
 - Click (or drag) to spawn glowing, colorful metaballs that grow, drift, and merge.
-- Ambient generative music using pentatonic scales with a slow background drone.
+- Ambient generative music using pentatonic scales with an optional slow background drone (disabled by default, togglable in UI).
 - Musical chimes triggered when blobs collide and merge.
 - Auto-generated "stardust" notes that periodically spawn new blobs.
-- Rich retro-futuristic terminal-style UI with live oscilloscope.
+- Rich retro-futuristic terminal-style UI layout.
 
 Everything is contained in a single `index.html` file that works offline after initial CDN loads.
 
@@ -24,7 +24,7 @@ Everything is contained in a single `index.html` file that works offline after i
 
 1. Open `index.html` directly in any modern browser (Chrome, Firefox, Safari, Edge).
 2. No build step or local server is required.
-3. Click **INITIALIZE SOUNDSCAPE** on the splash screen to start the audio context.
+3. Click **LET'S GO!** on the splash screen to start the audio context.
 
 The app gracefully falls back to the native Web Audio API if Tone.js fails to load.
 
@@ -54,7 +54,7 @@ The app gracefully falls back to the native Web Audio API if Tone.js fails to lo
 - **Scales** (`SCALES`): 5 musical modes (Celestial, Melancholic, Peaceful, Mystical, Bright).
 - **Main voices**: 6 triangle synths routed through panners + delay/reverb.
 - **Chime voices**: 4 fast sine synths for merge events.
-- **Drone**: Slow polyphonic sine drone with LFO-filtered lowpass.
+- **Drone**: Slow polyphonic sine drone with LFO-filtered lowpass (optional, controlled by the "AMBIENT BACKGROUND DRONE" UI toggle).
 - Spatial panning based on horizontal position.
 - Note selection biased by vertical click position in the current scale.
 
@@ -63,12 +63,15 @@ The app gracefully falls back to the native Web Audio API if Tone.js fails to lo
 - Drag → streams of small fast-decaying "stardust" droplets.
 - Collisions → harmonic chime chords.
 - Autoplay sequencer (when enabled) spawns background blobs + notes.
+- **Keyboard shortcuts**:
+  - `R` / `r` → Reset / clear all blobs.
+  - `C` / `c` → Open or close the Control Center (left panel).
+  - `L` / `l` → Open or close the System Monitor Logs (right panel).
 
 ### UI
 - Left panel: Master controls, scale selector, tempo, evaporation rate, presets.
 - Right panel: Scrolling terminal-style event log.
-- Bottom: Real-time waveform oscilloscope.
-- Collapsible side panels and pause/resume.
+- Collapsible side panels and pause/resume button.
 - Three soundscape presets (Deep Space, Starlight, ETH Drone).
 
 ### Color Theme ("antigravity cli")
