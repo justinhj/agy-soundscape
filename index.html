@@ -794,7 +794,7 @@
     <!-- Splash Screen (Resume Audio Context Prompt) -->
     <div id="splash-overlay">
         <div class="splash-content">
-            <div class="splash-logo">A N T I G R A V I T Y</div>
+            <div class="splash-logo">A G Y - S O U N D S C A P E</div>
             <div class="splash-subtitle">Generative Music Soundscape</div>
             <div class="splash-description">
                 An interactive generative audio-visual synth. Click and hold to grow glowing musical metaballs. Drag while holding to steer; release to launch with momentum.
@@ -805,9 +805,10 @@
                     <li><span>Drag while holding</span> to move the growing blob; release imparts velocity from your motion.</li>
                     <li><span>Collide</span> blobs to synthesize chime chords.</li>
                     <li><span>Autoplay</span> generates ambient notes in the background.</li>
+                    <li><span>Keyboard Shortcuts</span>: [R] clear blobs | [C] toggle controls | [L] toggle logs.</li>
                 </ul>
             </div>
-            <button class="splash-btn" id="init-btn">INITIALIZE SOUNDSCAPE</button>
+            <button class="splash-btn" id="init-btn">LET'S GO!</button>
         </div>
     </div>
 
@@ -2069,6 +2070,27 @@
         canvas.addEventListener('touchcancel', () => {
             if (growingBlob) {
                 finishGrowingBlob();
+            }
+        });
+
+        // --- Keyboard Controls ---
+        window.addEventListener('keydown', (e) => {
+            if (!audioInitialized) return;
+
+            const key = e.key.toLowerCase();
+            if (key === 'r') {
+                blobs = [];
+                growingBlob = null;
+                mouseHistory = [];
+                logToTerminal('SYSTEM', 'Cleared all active visual elements via [R] shortcut', 'muted');
+            } else if (key === 'c') {
+                leftPanel.classList.toggle('collapsed-left');
+                leftPanelToggle.textContent = leftPanel.classList.contains('collapsed-left') ? '>' : '<';
+                logToTerminal('SYSTEM', `Control center ${leftPanel.classList.contains('collapsed-left') ? 'closed' : 'opened'} via [C] shortcut`, 'muted');
+            } else if (key === 'l') {
+                rightPanel.classList.toggle('collapsed-right');
+                rightPanelToggle.textContent = rightPanel.classList.contains('collapsed-right') ? '<' : '>';
+                logToTerminal('SYSTEM', `System monitor logs ${rightPanel.classList.contains('collapsed-right') ? 'closed' : 'opened'} via [L] shortcut`, 'muted');
             }
         });
 
