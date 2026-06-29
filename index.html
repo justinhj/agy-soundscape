@@ -243,6 +243,34 @@
             gap: 24px;
         }
 
+        .header-btn {
+            background: transparent;
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            width: 34px;
+            height: 34px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .header-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 242, 254, 0.2);
+            background: rgba(0, 242, 254, 0.05);
+        }
+
+        .header-btn.active {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(0, 242, 254, 0.1);
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+        }
+
         .status-indicator {
             display: flex;
             align-items: center;
@@ -724,23 +752,75 @@
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
+            header {
+                padding: 0 12px;
+                height: 56px;
+            }
+            .header-title {
+                font-size: 12px;
+                letter-spacing: 1px;
+            }
+            .header-subtitle {
+                display: none;
+            }
+            .header-stats {
+                gap: 12px;
+            }
+            .status-indicator span:last-child {
+                display: none;
+            }
+            .header-stat-item {
+                font-size: 10px;
+            }
             .panels-container {
-                flex-direction: column;
-                padding: 10px;
-                gap: 10px;
-                overflow-y: auto;
+                position: relative;
+                padding: 0;
+                overflow: hidden;
+                pointer-events: none;
             }
-            .panel {
-                width: 100%;
-                height: 48%;
+            .panel, .right-panel {
+                position: absolute;
+                width: 290px;
+                height: calc(100% - 30px);
+                top: 15px;
+                bottom: 15px;
+                z-index: 20;
             }
-            .right-panel {
-                width: 100%;
+            #left-panel {
+                left: 10px;
             }
+            #right-panel {
+                right: 10px;
+            }
+            /* Collapsed States on Mobile */
+            .panel.collapsed-left {
+                transform: translateX(calc(-100% - 10px));
+                opacity: 0;
+            }
+            .panel.collapsed-right {
+                transform: translateX(calc(100% + 10px));
+                opacity: 0;
+            }
+            /* Show and style toggle buttons on mobile */
             .toggle-btn {
-                display: none; /* Hide sidebar toggles on small mobile screens */
+                display: flex !important;
+                width: 36px;
+                height: 64px;
+                font-size: 16px;
+                font-weight: 700;
+                border-radius: 0 8px 8px 0;
+                align-items: center;
+                justify-content: center;
             }
-
+            .left-toggle {
+                right: -36px;
+                border-left: none;
+            }
+            .right-toggle {
+                left: -36px;
+                border-right: none;
+                border-radius: 8px 0 0 8px;
+            }
         }
     </style>
 </head>
@@ -779,6 +859,21 @@
                 <div class="header-subtitle">INTERACTIVE MUSIC TERMINAL</div>
             </div>
             <div class="header-stats">
+                <button id="header-toggle-left" class="header-btn" title="Control Center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+                <button id="header-toggle-right" class="header-btn" title="System Logs">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </button>
                 <div class="status-indicator" id="status-indicator">
                     <span class="status-dot active"></span>
                     <span>AUDIO: ACTIVE</span>
@@ -792,8 +887,8 @@
         <!-- Sidebar Panels -->
         <div class="panels-container">
             <!-- Left panel: Synthesizer Controls -->
-            <aside class="panel" id="left-panel">
-                <button class="toggle-btn left-toggle" id="left-panel-toggle" title="Toggle Control Panel">&lt;</button>
+            <aside class="panel collapsed-left" id="left-panel">
+                <button class="toggle-btn left-toggle" id="left-panel-toggle" title="Toggle Control Panel">&gt;</button>
                 <div class="panel-header">
                     <div class="panel-title">CONTROL CENTER</div>
                 </div>
@@ -882,8 +977,8 @@
             </aside>
 
             <!-- Right panel: Terminal Monitors -->
-            <aside class="panel" id="right-panel">
-                <button class="toggle-btn right-toggle" id="right-panel-toggle" title="Toggle Terminal Panel">&gt;</button>
+            <aside class="panel collapsed-right" id="right-panel">
+                <button class="toggle-btn right-toggle" id="right-panel-toggle" title="Toggle Terminal Panel">&lt;</button>
                 <div class="panel-header">
                     <div class="panel-title">SYSTEM MONITOR LOGS</div>
                 </div>
@@ -928,9 +1023,15 @@
                 vec2 st = gl_FragCoord.xy / u_resolution.xy;
                 float aspect = u_resolution.x / u_resolution.y;
                 
-                // Aspect ratio corrected point for distance metrics
+                // Aspect ratio corrected point for distance metrics based on minimum dimension
                 vec2 p = st;
-                p.x *= aspect;
+                vec2 scale = vec2(1.0);
+                if (aspect >= 1.0) {
+                    scale.x = aspect;
+                } else {
+                    scale.y = 1.0 / aspect;
+                }
+                p *= scale;
 
                 float sum = 0.0;
                 vec3 color_sum = vec3(0.0);
@@ -940,8 +1041,7 @@
                     if (i >= u_blob_count) break;
                     
                     vec3 b = u_blobs[i];
-                    vec2 blob_pos = b.xy;
-                    blob_pos.x *= aspect;
+                    vec2 blob_pos = b.xy * scale;
                     
                     float r = b.z;
                     float d = distance(p, blob_pos);
@@ -1284,6 +1384,8 @@
         const rightPanel = document.getElementById('right-panel');
         const leftPanelToggle = document.getElementById('left-panel-toggle');
         const rightPanelToggle = document.getElementById('right-panel-toggle');
+        const headerToggleLeftBtn = document.getElementById('header-toggle-left');
+        const headerToggleRightBtn = document.getElementById('header-toggle-right');
 
         // --- Helper: Console Log Print ---
         function logToTerminal(category, message, colorClass = '') {
@@ -1319,16 +1421,57 @@
         }
 
         // --- UI Listeners (Pre-init) ---
-        // Toggle side panels
-        leftPanelToggle.addEventListener('click', () => {
-            leftPanel.classList.toggle('collapsed-left');
-            leftPanelToggle.textContent = leftPanel.classList.contains('collapsed-left') ? '>' : '<';
-        });
+        function toggleLeftPanel(open) {
+            const currentlyCollapsed = leftPanel.classList.contains('collapsed-left');
+            const shouldCollapse = open !== undefined ? !open : !currentlyCollapsed;
+            
+            if (shouldCollapse) {
+                leftPanel.classList.add('collapsed-left');
+                leftPanelToggle.textContent = '>';
+                if (headerToggleLeftBtn) headerToggleLeftBtn.classList.remove('active');
+            } else {
+                leftPanel.classList.remove('collapsed-left');
+                leftPanelToggle.textContent = '<';
+                if (headerToggleLeftBtn) headerToggleLeftBtn.classList.add('active');
+                
+                // Opening left closes right
+                toggleRightPanel(false);
+            }
+        }
 
-        rightPanelToggle.addEventListener('click', () => {
-            rightPanel.classList.toggle('collapsed-right');
-            rightPanelToggle.textContent = rightPanel.classList.contains('collapsed-right') ? '<' : '>';
-        });
+        function toggleRightPanel(open) {
+            const currentlyCollapsed = rightPanel.classList.contains('collapsed-right');
+            const shouldCollapse = open !== undefined ? !open : !currentlyCollapsed;
+            
+            if (shouldCollapse) {
+                rightPanel.classList.add('collapsed-right');
+                rightPanelToggle.textContent = '<';
+                if (headerToggleRightBtn) headerToggleRightBtn.classList.remove('active');
+            } else {
+                rightPanel.classList.remove('collapsed-right');
+                rightPanelToggle.textContent = '>';
+                if (headerToggleRightBtn) headerToggleRightBtn.classList.add('active');
+                
+                // Opening right closes left
+                toggleLeftPanel(false);
+            }
+        }
+
+        // Toggle side panels
+        leftPanelToggle.addEventListener('click', () => toggleLeftPanel());
+        rightPanelToggle.addEventListener('click', () => toggleRightPanel());
+
+        // Header button listeners
+        if (headerToggleLeftBtn) {
+            headerToggleLeftBtn.addEventListener('click', () => toggleLeftPanel());
+        }
+        if (headerToggleRightBtn) {
+            headerToggleRightBtn.addEventListener('click', () => toggleRightPanel());
+        }
+
+        // Collapse by default on load
+        toggleLeftPanel(false);
+        toggleRightPanel(false);
 
         // --- Initialize WebGL Engine ---
         function initWebGL() {
@@ -1640,10 +1783,15 @@
                     const b2 = blobs[j];
                     if (b2.isMerged || b2.growing) continue;
 
-                    // Compute aspect-corrected distance
+                    // Compute aspect-corrected distance based on minimum dimension
                     const aspect = canvas.width / canvas.height;
-                    const dx = (b1.x - b2.x) * aspect;
-                    const dy = b1.y - b2.y;
+                    let dx = b1.x - b2.x;
+                    let dy = b1.y - b2.y;
+                    if (aspect >= 1.0) {
+                        dx *= aspect;
+                    } else {
+                        dy /= aspect;
+                    }
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     // Merge when centers cross below 82% of combined radii
@@ -1985,12 +2133,10 @@
                 mouseHistory = [];
                 logToTerminal('SYSTEM', 'Cleared all active visual elements via [R] shortcut', 'muted');
             } else if (key === 'c') {
-                leftPanel.classList.toggle('collapsed-left');
-                leftPanelToggle.textContent = leftPanel.classList.contains('collapsed-left') ? '>' : '<';
+                toggleLeftPanel();
                 logToTerminal('SYSTEM', `Control center ${leftPanel.classList.contains('collapsed-left') ? 'closed' : 'opened'} via [C] shortcut`, 'muted');
             } else if (key === 'l') {
-                rightPanel.classList.toggle('collapsed-right');
-                rightPanelToggle.textContent = rightPanel.classList.contains('collapsed-right') ? '<' : '>';
+                toggleRightPanel();
                 logToTerminal('SYSTEM', `System monitor logs ${rightPanel.classList.contains('collapsed-right') ? 'closed' : 'opened'} via [L] shortcut`, 'muted');
             }
         });
